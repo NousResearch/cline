@@ -1,6 +1,7 @@
 import * as protoLoader from "@grpc/proto-loader"
 import * as fs from "fs"
 import * as health from "grpc-health-check"
+import * as path from "path"
 import { StreamingCallbacks } from "@/hosts/host-provider-types"
 
 const log = (...args: unknown[]) => {
@@ -18,9 +19,23 @@ const log = (...args: unknown[]) => {
 	console.log(`[${timestamp}]`, "#bot.cline.server.ts", ...args)
 }
 
+function resolveDescriptorPath(): string {
+	const descriptorCandidates = [
+		path.resolve("dist-standalone/proto/descriptor_set.pb"),
+		path.resolve("proto/descriptor_set.pb"),
+	]
+	for (const candidate of descriptorCandidates) {
+		if (fs.existsSync(candidate)) {
+			return candidate
+		}
+	}
+	throw new Error(`descriptor_set.pb not found. Checked:\n${descriptorCandidates.join("\n")}`)
+}
+
 function getPackageDefinition() {
 	// Load service definitions.
-	const descriptorSet = fs.readFileSync("proto/descriptor_set.pb")
+	const descriptorPath = resolveDescriptorPath()
+	const descriptorSet = fs.readFileSync(descriptorPath)
 	const options = { longs: Number } // Encode int64 fields as numbers
 	const descriptorDefs = protoLoader.loadFileDescriptorSetFromBuffer(descriptorSet, options)
 	const healthDef = protoLoader.loadSync(health.protoPath)

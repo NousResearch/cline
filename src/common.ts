@@ -72,19 +72,23 @@ export async function initialize(context: vscode.ExtensionContext): Promise<Webv
 
 	await showVersionUpdateAnnouncement(context)
 
-	// Initialize banner service
-	BannerService.initialize(webview.controller)
-	BannerService.get()
-		.fetchActiveBanners()
-		.then((banners) => {
-			if (banners.length > 0) {
-				Logger.log(`BannerService: ${banners.length} active banner(s) fetched.`)
-				// Banners are now cached and can be accessed by the frontend when needed
-			}
-		})
-		.catch((error) => {
-			Logger.error("BannerService: Failed to fetch banners on startup", error)
-		})
+	// Initialize banner service (can be disabled via CLINE_DISABLE_BANNERS)
+	if (process.env.CLINE_DISABLE_BANNERS === "true") {
+		Logger.log("BannerService: disabled via CLINE_DISABLE_BANNERS")
+	} else {
+		BannerService.initialize(webview.controller)
+		BannerService.get()
+			.fetchActiveBanners()
+			.then((banners) => {
+				if (banners.length > 0) {
+					Logger.log(`BannerService: ${banners.length} active banner(s) fetched.`)
+					// Banners are now cached and can be accessed by the frontend when needed
+				}
+			})
+			.catch((error) => {
+				Logger.error("BannerService: Failed to fetch banners on startup", error)
+			})
+	}
 
 	telemetryService.captureExtensionActivated()
 

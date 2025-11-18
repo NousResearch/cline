@@ -150,16 +150,29 @@ export class Controller {
 		this.ocaAuthService = OcaAuthService.initialize(this)
 		this.accountService = ClineAccountService.getInstance()
 
-		const authStatusHandler: StreamingResponseHandler<AuthState> = async (response, _isLast, _seqNumber): Promise<void> => {
-			if (response.user) {
-				fetchRemoteConfig(this)
-			}
-		}
-		this.authService.subscribeToAuthStatusUpdate(this, {}, authStatusHandler, undefined)
+		const remoteConfigEnabled = process.env.CLINE_DISABLE_REMOTE_CONFIG !== "true"
 
-		this.authService.restoreRefreshTokenAndRetrieveAuthInfo().then(() => {
-			this.startRemoteConfigTimer()
-		})
+		if (remoteConfigEnabled) {
+			const authStatusHandler: StreamingResponseHandler<AuthState> = async (
+				response,
+				_isLast,
+				_seqNumber,
+			): Promise<void> => {
+				if (response.user) {
+					fetchRemoteConfig(this)
+				}
+			}
+			this.authService.subscribeToAuthStatusUpdate(this, {}, authStatusHandler, undefined)
+
+			this.authService.restoreRefreshTokenAndRetrieveAuthInfo().then(() => {
+				this.startRemoteConfigTimer()
+			})
+		} else {
+			// Restore auth info but skip remote config entirely
+			this.authService.restoreRefreshTokenAndRetrieveAuthInfo().catch((error) => {
+				console.error("Failed to restore auth info:", error)
+			})
+		}
 
 		this.mcpHub = new McpHub(
 			() => ensureMcpServersDirectoryExists(),
@@ -251,7 +264,10 @@ export class Controller {
 		historyItem?: HistoryItem,
 		taskSettings?: Partial<Settings>,
 	) {
-		await fetchRemoteConfig(this)
+		const remoteConfigEnabled = process.env.CLINE_DISABLE_REMOTE_CONFIG !== "true"
+		if (remoteConfigEnabled) {
+			await fetchRemoteConfig(this)
+		}
 
 		await this.clearTask() // ensures that an existing task doesn't exist before starting a new one, although this shouldn't be possible since user must clear task before starting a new one
 
