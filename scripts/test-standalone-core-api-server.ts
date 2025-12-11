@@ -121,13 +121,15 @@ async function main(): Promise<void> {
 
 	console.log(`Starting Cline Core Service... (useC8=${USE_C8})`)
 
+	// Use PROTOBUS_ADDRESS from env if provided (e.g., 0.0.0.0:port for Docker), else default to 127.0.0.1
+	const protobusAddress = process.env.PROTOBUS_ADDRESS || `127.0.0.1:${PROTOBUS_PORT}`
 	const coreService: ChildProcess = spawn("npx", spawnArgs, {
 		cwd: projectRoot,
 		env: {
 			...process.env,
 			NODE_PATH: "./node_modules",
 			DEV_WORKSPACE_FOLDER: WORKSPACE_DIR,
-			PROTOBUS_ADDRESS: `127.0.0.1:${PROTOBUS_PORT}`,
+			PROTOBUS_ADDRESS: protobusAddress,
 			HOST_BRIDGE_ADDRESS: `localhost:${HOSTBRIDGE_PORT}`,
 			E2E_TEST,
 			CLINE_ENVIRONMENT,
