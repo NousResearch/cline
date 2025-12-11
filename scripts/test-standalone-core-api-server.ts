@@ -82,7 +82,7 @@ async function main(): Promise<void> {
 	const userDataDir = mkdtempSync(path.join(os.tmpdir(), "vsce"))
 	const clineTestWorkspace = mkdtempSync(path.join(os.tmpdir(), "cline-test-workspace-"))
 
-	console.log("Starting HostBridge test server...")
+	console.log("Starting HostBridge test server (with real file operations)...")
 	const hostbridge: ChildProcess = spawn("npx", ["tsx", path.join(__dirname, "test-hostbridge-server.ts")], {
 		stdio: "pipe",
 		env: {
