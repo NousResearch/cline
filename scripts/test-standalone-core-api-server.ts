@@ -80,14 +80,16 @@ async function main(): Promise<void> {
 
 	const extensionsDir = path.join(distDir, "vsce-extension")
 	const userDataDir = mkdtempSync(path.join(os.tmpdir(), "vsce"))
-	const clineTestWorkspace = mkdtempSync(path.join(os.tmpdir(), "cline-test-workspace-"))
+	// Use WORKSPACE_DIR for hostbridge file operations instead of random temp dir
+	// This allows evals to use a consistent /workspace path
+	const hostbridgeWorkspace = WORKSPACE_DIR
 
 	console.log("Starting HostBridge test server (with real file operations)...")
 	const hostbridge: ChildProcess = spawn("npx", ["tsx", path.join(__dirname, "test-hostbridge-server.ts")], {
 		stdio: "pipe",
 		env: {
 			...process.env,
-			TEST_HOSTBRIDGE_WORKSPACE_DIR: clineTestWorkspace,
+			TEST_HOSTBRIDGE_WORKSPACE_DIR: hostbridgeWorkspace,
 			HOST_BRIDGE_ADDRESS: `127.0.0.1:${HOSTBRIDGE_PORT}`,
 		},
 	})
@@ -152,7 +154,7 @@ async function main(): Promise<void> {
 
 		try {
 			rmSync(userDataDir, { recursive: true, force: true })
-			rmSync(clineTestWorkspace, { recursive: true, force: true })
+			// Note: We don't clean up hostbridgeWorkspace as it may be the user's real workspace
 			console.log("Cleaned up temporary directories")
 		} catch (err) {
 			console.warn("Failed to cleanup temp directories:", err)
